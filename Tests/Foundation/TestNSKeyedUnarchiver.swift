@@ -122,4 +122,85 @@ class TestNSKeyedUnarchiver : XCTestCase {
         let uuid = NSUUID(uuidString: "0AD863BA-7584-40CF-8896-BD87B3280C34")
         try test_unarchive_from_file("NSKeyedUnarchiver-UUIDTest", uuid!)
     }
+
+    func test_unarchive_cyclic_graph() throws {
+        let root = NodeGraph(name: "Root")
+
+        let children = [
+            NodeGraph(name: "Child1"),
+            NodeGraph(name: "Child2"),
+            NodeGraph(name: "Child3"),
+            NodeGraph(name: "Child4")
+        ]
+        try test_unarchive_from_file("NSKeyedUnarchiver-NodeGraphTest", root)
+    }
 }
+
+import Foundation
+
+class NodeGraph: NSObject, NSCoding {
+    var name: String
+    var children: [NodeGraph]
+    var parent: NodeGraph?
+
+    init(name: String) {
+        self.name = name
+        self.children = []
+        self.parent = nil
+    }
+
+    // MARK: - NSCoding
+
+    required init?(coder: NSCoder) {
+        print(coder, type(of: coder))
+        name = coder.decodeObject(forKey: "name") as! String
+        children = coder.decodeObject(forKey: "children") as! [NodeGraph]
+        parent = coder.decodeObject(forKey: "parent") as! NodeGraph?
+    }
+
+    func encode(with coder: NSCoder) {
+        print("[\(name)] Node.encode start")
+        coder.encode(name, forKey: "name")
+        print("[\(name)]   will encode children")
+        coder.encode(children, forKey: "children")
+        print("[\(name)]   did encode children")
+        print("[\(name)]   will encode parent \(String(describing: parent))")
+        coder.encode(parent, forKey: "parent")
+        print("[\(name)]   did encode parent")
+        print("[\(name)] Node.encode end")
+    }
+
+    override var description: String {
+        return "[\(name)] parent: \(parent?.name ?? "nil"); children: [\(children.map(\.name).joined(separator: ", "))]"
+    }
+}
+
+extension NodeGraph {
+    func addChildren(_ children: [NodeGraph]) {
+        children.forEach {
+            addChild($0)
+        }
+    }
+
+    func addChild(_ child: NodeGraph) {
+        child.removeFromParent()
+        children.append(child)
+        child.parent = self
+    }
+
+    func removeChild(_ child: NodeGraph) {
+        guard let index = children.firstIndex(where: { $0 === child }) else {
+            return
+        }
+        children.remove(at: index)
+        child.parent = nil
+    }
+
+    func removeFromParent() {
+        guard let parent else { return }
+        parent.removeChild(self)
+    }
+}
+
+
+
