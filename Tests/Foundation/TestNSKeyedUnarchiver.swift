@@ -132,6 +132,19 @@ class TestNSKeyedUnarchiver : XCTestCase {
             NodeGraph(name: "Child3"),
             NodeGraph(name: "Child4")
         ]
+
+        root.addChildren(children)
+
+        let archiveData = try NSKeyedArchiver.archivedData(
+            withRootObject: root,
+            requiringSecureCoding: false
+        )
+        let testFilePath = testBundle().path(forResource: "NSKeyedUnarchiver-NodeGraphTest", ofType: "plist")!
+        try archiveData.write(to: URL(filePath: testFilePath))
+
+        // NSKeyedArchiver.encode(NSCoder)
+        // try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(archiveData) as! NodeGraph
+
         try test_unarchive_from_file("NSKeyedUnarchiver-NodeGraphTest", root)
     }
 }
@@ -173,6 +186,15 @@ class NodeGraph: NSObject, NSCoding {
     override var description: String {
         return "[\(name)] parent: \(parent?.name ?? "nil"); children: [\(children.map(\.name).joined(separator: ", "))]"
     }
+}
+
+extension NodeGraph {
+    static func ==(_ lhs: NodeGraph, _ rhs: NodeGraph) -> Bool {
+        guard lhs.name == rhs.name else { return false }
+        guard lhs.children == rhs.children else { return false }
+        guard lhs.parent?.name == rhs.parent?.name else { return false }
+        return true
+    } 
 }
 
 extension NodeGraph {

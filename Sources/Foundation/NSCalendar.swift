@@ -59,6 +59,8 @@ extension NSCalendar {
             case .republicOfChina: self = .republicOfChina
             case .islamicTabular: self = .islamicTabular
             case .islamicUmmAlQura: self = .islamicUmmAlQura
+            case .bangla, .gujarati, .kannada, .malayalam, .marathi, .odia, .tamil, .telugu, .vikram, .dangi, .thai, .vietnamese:
+                fallthrough
             @unknown default:
                 // Default to gregorian if `FoundationEssentials.Calendar` adds more calendar that we do not support here yet
                 self = .gregorian
